@@ -29,6 +29,7 @@ export default {
 }
 
 .hover:hover {
+  cursor: pointer;
   box-shadow: inset 0px 0px 14px 0px;
 }
 

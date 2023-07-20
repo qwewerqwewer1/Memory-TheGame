@@ -1,7 +1,5 @@
 <template>
-  <div class="main">
-    <RouterView />
-  </div>
+  <RouterView />
 </template>
 
 <style>
@@ -12,9 +10,6 @@ body {
   color: aqua;
   font-family: monospace;
   font-size: 50px;
-}
-
-.main {
   display: flex;
   justify-content: center;
   align-items: center;
