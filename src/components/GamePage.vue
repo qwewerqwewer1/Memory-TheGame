@@ -1,82 +1,134 @@
 <template>
-  <div>
-    <h4>{{ isStart }}</h4>
-    <div id="GamePage">
+  <div class="game-page">
+    <h4 class="game-page__status">{{ isStart }}</h4>
+    <div class="game-page__grid">
+      <!-- Plate -->
       <div
         v-for="(plate, i) in plates"
         :key="i"
+        @click="playerCanClick ? handlePlateClick(plate) : null"
         :class="[
-          { active: plate.active, clicked: plate.isClicked },
-          plate.color,
+          {
+            'game-page__plate--active': plate.active,
+            'game-page__plate--disabled': !playerCanClick,
+          },
+          `game-page__plate--${plate.color}`,
         ]"
-        @click="toggleClick"
-        class="grid-item"
+        class="game-page__plate"
       ></div>
     </div>
-    <h4 class="hover" @click="() => this.$router.push('/')">Назад</h4>
-    <!-- <h4 class='hover' @click="activeMeRandomPlate">activeMeRandomPlate</h4> -->
+    <!-- plate -->
+    <h4
+      class="game-page__btn_back game-page__status"
+      @click="() => this.$router.replace('/')"
+    >
+      Назад
+    </h4>
   </div>
 </template>
 
 <script>
+import CompActivatePlate from "@/assets/sounds/CompActivatePlate.mp3";
+import PlayerActivatePlate from "@/assets/sounds/PlayerActivatePlate.mp3";
+import PlayerActivatePlateError from "@/assets/sounds/ErrorActivatePlate.mp3";
+import Tick from "@/assets/sounds/tick.mp3";
 export default {
   data() {
     return {
-      playerArr: [],
-      arrRandomsPlates: [],
+      playerClickCounter: 0,
+      computerPlates: [],
       secBeforeStartGame: 3,
-      idx: 0,
-      startInterval: null,
-      randomNumPC: Number,
+      currentIndex: 0,
+      timerInterval: null,
       plates: [
-        { active: false, color: "red", isClicked: false },
-        { active: false, color: "green", isClicked: false },
-        { active: false, color: "blue", isClicked: false },
-        { active: false, color: "yellow", isClicked: false },
+        { active: false, color: "red" },
+        { active: false, color: "green" },
+        { active: false, color: "blue" },
+        { active: false, color: "yellow" },
       ],
+      playerCanClick: false,
     };
   },
+
   mounted() {
     this.startTimer();
   },
+
   methods: {
+    computerPlateActivationSound() {
+      const audio = new Audio(CompActivatePlate);
+      audio.play();
+    },
+    playerPlateActivationSound() {
+      const audio = new Audio(PlayerActivatePlate);
+      audio.play();
+    },
+    playerPlateActivationSoundError() {
+      const audio = new Audio(PlayerActivatePlateError);
+      audio.play();
+    },
+    tickSound() {
+      const audio = new Audio(Tick);
+      audio.play();
+    },
     startTimer() {
-      this.startInterval = setInterval(() => this.secBeforeStartGame--, 1000);
+      this.timerInterval = setInterval(() => {
+        this.secBeforeStartGame--;
+      }, 1000);
     },
-    activeMeRandomPlate() {
-      let randNumPlate = Math.floor(Math.random() * 4);
-      this.arrRandomsPlates.push(randNumPlate);
-      this.blinkAllPlates();
+    activateRandomPlate() {
+      this.playerCanClick = false;
+      let randomNumber = Math.floor(Math.random() * 4);
+      let plate = this.plates[randomNumber];
+      this.computerPlates.push(plate);
+      this.blinkAllCompColors();
     },
-    blinkAllPlates() {
-      if (this.idx < this.arrRandomsPlates.length) {
-        let currentPlate = this.plates[this.arrRandomsPlates[this.idx]];
+    blinkAllCompColors() {
+      if (this.currentIndex < this.computerPlates.length) {
+        let currentPlate = this.computerPlates[this.currentIndex];
         currentPlate.active = true;
+        this.computerPlateActivationSound();
         setTimeout(() => {
           currentPlate.active = false;
-          this.idx++;
-          setTimeout(this.blinkAllPlates, 1000);
-        }, 1000);
+          this.currentIndex++;
+          setTimeout(this.blinkAllCompColors, 500);
+        }, 500);
       } else {
-        this.idx = 0;
+        this.currentIndex = 0;
+        setTimeout(() => (this.playerCanClick = true));
       }
     },
-    toggleClick() {
-      alert();
+    handlePlateClick(plate) {
+      if (plate === this.computerPlates[this.playerClickCounter]) {
+        this.playerPlateActivationSound();
+        if (this.playerClickCounter !== this.computerPlates.length - 1) {
+          this.playerClickCounter++;
+        } else {
+          this.playerClickCounter = 0;
+          this.playerCanClick = false;
+          setTimeout(() => this.activateRandomPlate(), 1000);
+        }
+      } else {
+        this.playerPlateActivationSoundError();
+        this.$router.replace("/");
+      }
     },
   },
   computed: {
     isStart() {
-      return this.secBeforeStartGame > -1
-        ? `Игра начнется через ${this.secBeforeStartGame}`
-        : "Запоминай!";
+      if (this.secBeforeStartGame > -1) {
+        return `Игра начнется через ${this.secBeforeStartGame}`;
+      } else {
+        return this.playerCanClick ? "Жмякай" : "Запоминай!";
+      }
     },
   },
   watch: {
-    secBeforeStartGame() {
+    secBeforeStartGame(currentSec, prevSec) {
+      if (currentSec !== prevSec && currentSec >= 0) this.tickSound();
       if (this.secBeforeStartGame === -2) {
-        clearInterval(this.startInterval);
-        this.activeMeRandomPlate();
+        clearInterval(this.timerInterval);
+        this.activateRandomPlate();
       }
     },
   },
@@ -84,69 +136,105 @@ export default {
 </script>
 
 <style scoped>
-#GamePage {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  grid-template-rows: 1fr 1fr;
-  gap: 25px;
+.game-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
 }
 
-.grid-item {
+.game-page__grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 25px;
+  max-width: 693px;
+  margin: auto;
+}
+
+.game-page__plate {
   height: 334px;
   width: 334px;
   border-radius: 7%;
-}
-
-.grid-item:hover {
   cursor: pointer;
-  opacity: 0.6;
+  opacity: 0.55;
+  box-shadow: 10px -12px 0px 0px;
+  transition: box-shadow 0.3s, transform 0.3s;
 }
 
-.clicked {
-  scale: 0.95;
+.game-page__plate:hover {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.8);
+  transform: translate(5px, -5px);
 }
 
-.red {
+.game-page__plate:active {
+  opacity: 1;
+  box-shadow: 10px -10px 13px 7px;
+  transform: translateY(0) scale(1.1) rotateX(20deg);
+}
+
+.game-page__plate--red {
   background: #e70909c2;
   color: #e709094b;
-  opacity: 0.3;
-  box-shadow: 10px -12px 0px 0px;
 }
 
-.green {
+.game-page__plate--green {
   background: #05f311cc;
   color: #05f3113f;
-  opacity: 0.3;
-  box-shadow: 10px -12px 0px 0px;
 }
 
-.blue {
+.game-page__plate--blue {
   background: #0c2de9c7;
   color: #0c2de934;
-  opacity: 0.3;
-  box-shadow: 10px -12px 0px 0px;
 }
 
-.yellow {
+.game-page__plate--yellow {
   background: #e5ff00cb;
   color: #e5ff0042;
-  opacity: 0.3;
-  box-shadow: 10px -12px 0px 0px;
 }
 
-.hover:hover {
-  cursor: pointer;
-  box-shadow: inset 0px 0px 14px 0px;
-}
-
-h4 {
+.game-page__status {
   display: flex;
   justify-content: center;
   align-items: center;
+  margin: 0;
+  padding: 20px;
+  font-size: 32px;
+  color: #f8bc35;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
-.active {
+.game-page__btn_back {
+  padding: 15px 40px;
+  font-size: 28px;
+  font-weight: bold;
+  text-transform: uppercase;
+  border: none;
+  border-radius: 12px;
+  margin: 20px;
+  cursor: pointer;
+  transition: background-color 0.3s, transform 0.3s;
+  background-color: #f2bd00;
+  color: #fff;
+}
+
+.game-page__btn_back:hover {
+  background-color: #2bd94e;
+  transform: translateY(-4px);
+}
+
+.game-page__btn_back:active {
+  background-color: #2bd94e;
+  transform: translateY(-4px);
+}
+
+.game-page__plate--active {
   opacity: 1;
   box-shadow: 10px -10px 13px 7px;
+}
+
+.game-page__plate--disabled {
+  pointer-events: none;
 }
 </style>

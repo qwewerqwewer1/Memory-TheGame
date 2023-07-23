@@ -1,17 +1,25 @@
 <template>
-  <RouterView />
+  <div id="container">
+    <RouterView />
+  </div>
 </template>
 
 <style>
 body {
-  margin: 30px;
-  padding: 30px;
-  background: linear-gradient(90deg, #121212, #24262c);
-  color: aqua;
-  font-family: monospace;
-  font-size: 50px;
+  margin: 0;
+  padding: 0;
+  background-color: #02071ced;
+}
+
+#container {
+  height: 100vh;
   display: flex;
   justify-content: center;
   align-items: center;
+  color: #ffffff;
+  font-family: cursive;
+  font-size: 40px;
+  text-transform: uppercase;
+  letter-spacing: 3px;
 }
 </style>
